@@ -5,7 +5,7 @@ import { PhoneCall, Plus, RefreshCw, Radio, PhoneOff, ArrowRight } from 'lucide-
 import { Header } from '@/components/header';
 import { CallStatusBadge } from '@/components/call-status-badge';
 import { LanguageBadge } from '@/components/language-badge';
-import { fetchCalls, createCall, Call } from '@/lib/api';
+import { fetchCalls, createCall, fetchSettings, Call, AppSettings } from '@/lib/api';
 import { formatDuration } from '@/lib/utils';
 import { useWebSocket } from '@/lib/websocket';
 
@@ -15,6 +15,7 @@ export default function CallsPage() {
   const [showNewCallModal, setShowNewCallModal] = useState(false);
   const [newPhoneNumber, setNewPhoneNumber] = useState('+8801712345678');
   const [newLanguage, setNewLanguage] = useState('bn-BD');
+  const [settings, setSettings] = useState<AppSettings | null>(null);
 
   const loadCalls = async () => {
     try {
@@ -29,6 +30,13 @@ export default function CallsPage() {
 
   useEffect(() => {
     loadCalls();
+    fetchSettings().then((saved) => {
+      if (saved) {
+        setSettings(saved);
+        setNewPhoneNumber(saved.default_phone_number);
+        setNewLanguage(saved.default_language);
+      }
+    });
   }, []);
 
   const { isConnected } = useWebSocket({
@@ -47,7 +55,7 @@ export default function CallsPage() {
         phone_number: newPhoneNumber,
         direction: 'OUTBOUND',
         language: newLanguage,
-        agent_id: 'ai-receptionist-01',
+        agent_id: settings?.default_agent_id,
       });
       setShowNewCallModal(false);
       loadCalls();

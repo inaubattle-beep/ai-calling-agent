@@ -21,6 +21,8 @@ class AgentConfig:
     model: str = "mock-receptionist-v1"
     max_response_sentences: int = 3
     enable_barge_in: bool = True
+    greeting: str = "আসসালামু আলাইকুম, AI কল সেন্টারে আপনাকে স্বাগতম। আমি কীভাবে সাহায্য করতে পারি?"
+    system_prompt: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 

@@ -41,6 +41,11 @@ export default function AgentsPage() {
     stt_latency_ms: 140,
     llm_latency_ms: 220,
     tts_latency_ms: 180,
+    description: 'AI voice agent',
+    greeting: '',
+    system_prompt: '',
+    supported_languages: ['bn-BD', 'en-US', 'mixed'],
+    enabled: true,
   };
 
   return (

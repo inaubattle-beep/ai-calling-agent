@@ -19,7 +19,7 @@ class CallCreate(BaseModel):
     phone_number: str = Field(..., json_schema_extra={"example": "+8801712345678"})
     direction: str = Field(default="OUTBOUND", json_schema_extra={"example": "OUTBOUND"})
     language: str = Field(default="bn-BD", json_schema_extra={"example": "bn-BD"})
-    agent_id: str = Field(default="ai-receptionist-01", json_schema_extra={"example": "ai-receptionist-01"})
+    agent_id: Optional[str] = Field(default=None, json_schema_extra={"example": "ai-receptionist-01"})
 
 
 class CallResponse(BaseModel):

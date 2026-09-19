@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String, Text
 from ..database import Base
 
 
@@ -14,3 +14,8 @@ class AgentModel(Base):
     stt_latency_ms = Column(Integer, nullable=False, default=140)
     llm_latency_ms = Column(Integer, nullable=False, default=220)
     tts_latency_ms = Column(Integer, nullable=False, default=180)
+    description = Column(Text, nullable=False, default="AI voice agent")
+    greeting = Column(Text, nullable=False, default="আসসালামু আলাইকুম, আমি কীভাবে সাহায্য করতে পারি?")
+    system_prompt = Column(Text, nullable=False, default="You are a polite, helpful telephone AI receptionist.")
+    supported_languages = Column(Text, nullable=False, default='["bn-BD", "en-US", "mixed"]')
+    enabled = Column(Boolean, nullable=False, default=True)

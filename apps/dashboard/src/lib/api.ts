@@ -35,6 +35,22 @@ export interface Agent {
   stt_latency_ms: number;
   llm_latency_ms: number;
   tts_latency_ms: number;
+  description: string;
+  greeting: string;
+  system_prompt: string;
+  supported_languages: string[];
+  enabled: boolean;
+}
+
+export interface AppSettings {
+  id: number;
+  business_name: string;
+  dashboard_title: string;
+  sip_extension: string;
+  default_language: string;
+  supported_languages: string[];
+  default_phone_number: string;
+  default_agent_id: string;
 }
 
 export interface SystemEvent {
@@ -104,6 +120,32 @@ export async function simulateCall(data: {
 export async function fetchAgents(): Promise<Agent[]> {
   const res = await fetch(`${API_BASE}/api/agents`, { cache: 'no-store' });
   if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchSettings(): Promise<AppSettings | null> {
+  const res = await fetch(`${API_BASE}/api/admin/settings`, { cache: 'no-store' });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function updateSettings(settings: Omit<AppSettings, 'id'>): Promise<AppSettings> {
+  const res = await fetch(`${API_BASE}/api/admin/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function updateAgent(id: string, agent: Omit<Agent, 'id' | 'status' | 'current_call_id' | 'stt_latency_ms' | 'llm_latency_ms' | 'tts_latency_ms'>): Promise<Agent> {
+  const res = await fetch(`${API_BASE}/api/admin/agents/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(agent),
+  });
+  if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 

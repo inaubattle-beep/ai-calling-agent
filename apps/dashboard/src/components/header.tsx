@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Play, Zap, PhoneIncoming, CheckCircle2, Wifi, ShieldAlert } from 'lucide-react';
-import { simulateCall } from '@/lib/api';
+import { fetchSettings, simulateCall, AppSettings } from '@/lib/api';
 
 interface HeaderProps {
   wsConnected?: boolean;
@@ -10,13 +10,18 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ wsConnected = true }) => {
   const [isSimulating, setIsSimulating] = useState(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  React.useEffect(() => {
+    fetchSettings().then(setSettings).catch(() => undefined);
+  }, []);
 
   const handleSimulate = async (lang: string, bargeIn: boolean = false) => {
     try {
       setIsSimulating(true);
       await simulateCall({
-        phone_number: '+8801819203040',
-        language: lang,
+        phone_number: settings?.default_phone_number,
+        language: settings?.supported_languages.includes(lang) ? lang : settings?.default_language,
         barge_in: bargeIn,
       });
     } catch (e) {
@@ -29,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ wsConnected = true }) => {
   return (
     <header className="h-16 border-b border-border bg-[#0a0d14]/70 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30">
       <div className="flex items-center gap-3">
-        <h1 className="text-base font-semibold text-slate-100">Bilingual AI Contact Center</h1>
+        <h1 className="text-base font-semibold text-slate-100">{settings?.business_name || 'Contact Center'}</h1>
         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span>System Healthy</span>

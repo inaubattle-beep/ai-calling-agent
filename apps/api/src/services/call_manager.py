@@ -25,6 +25,7 @@ from ..events.bus import event_bus
 from ..models.agent import AgentModel
 from ..models.call import CallModel
 from ..models.transcript import TranscriptMessageModel
+from ..models.settings import AppSettingsModel
 
 logger = logging.getLogger("service.call_manager")
 
@@ -97,8 +98,12 @@ class CallManager:
         await event_bus.publish(event_name, data, call_id=call_id)
 
     async def init_agent_record(self) -> None:
-        """Seed default AI Receptionist agent if not existing in database."""
+        """Create editable defaults once; runtime values remain database-backed."""
         async with AsyncSessionLocal() as session:
+            app_settings = await session.get(AppSettingsModel, 1)
+            if not app_settings:
+                app_settings = AppSettingsModel(id=1)
+                session.add(app_settings)
             stmt = select(AgentModel).where(AgentModel.id == "ai-receptionist-01")
             res = await session.execute(stmt)
             agent = res.scalar_one_or_none()
@@ -112,6 +117,10 @@ class CallManager:
                     stt_latency_ms=140,
                     llm_latency_ms=220,
                     tts_latency_ms=180,
+                    description="Bilingual AI receptionist",
+                    greeting="আসসালামু আলাইকুম, AI কল সেন্টারে আপনাকে স্বাগতম। আমি কীভাবে সাহায্য করতে পারি?",
+                    system_prompt="You are a polite, helpful, and professional telephone AI Receptionist.",
+                    supported_languages='["bn-BD", "en-US", "mixed"]',
                 )
                 session.add(agent)
                 await session.commit()
@@ -121,12 +130,17 @@ class CallManager:
         self,
         phone_number: str,
         direction: str = "OUTBOUND",
-        language: str = "bn-BD",
-        agent_id: str = "ai-receptionist-01",
+        language: Optional[str] = None,
+        agent_id: Optional[str] = None,
     ) -> CallModel:
         call_id = f"call-{uuid.uuid4().hex[:8]}"
 
         async with AsyncSessionLocal() as session:
+            app_settings = await session.get(AppSettingsModel, 1)
+            language = language or (app_settings.default_language if app_settings else "bn-BD")
+            agent_id = agent_id or (app_settings.default_agent_id if app_settings else "ai-receptionist-01")
+            if not await session.get(AgentModel, agent_id):
+                raise ValueError(f"Agent {agent_id} not found")
             call = CallModel(
                 id=call_id,
                 phone_number=phone_number,
@@ -178,8 +192,20 @@ class CallManager:
             call.answered_at = datetime.now(timezone.utc)
             await session.commit()
 
-        # Create Agent instance for this call
-        agent = AIReceptionistAgent(llm_provider=self.llm)
+        async with AsyncSessionLocal() as session:
+            agent_record = await session.get(AgentModel, call.agent_id)
+        if not agent_record:
+            logger.error("Agent %s not found for call %s", call.agent_id, call_id)
+            return
+        agent_config = AgentConfig(
+            agent_id=agent_record.id,
+            name=agent_record.name,
+            default_language=call.language or agent_record.primary_language,
+            model=agent_record.model,
+            greeting=agent_record.greeting,
+            system_prompt=agent_record.system_prompt,
+        )
+        agent = AIReceptionistAgent(llm_provider=self.llm, config=agent_config)
         self.active_agents[call_id] = agent
 
         await self.telephony.answer_call(call_id)
@@ -377,13 +403,18 @@ class CallManager:
 
     async def simulate_realistic_call(
         self,
-        phone_number: str = "+8801819203040",
-        language: str = "bn-BD",
+        phone_number: Optional[str] = None,
+        language: Optional[str] = None,
         barge_in: bool = False,
     ) -> str:
         """
         Runs an automated end-to-end simulated conversation with realistic dialogue timing.
         """
+        if not phone_number or not language:
+            async with AsyncSessionLocal() as session:
+                app_settings = await session.get(AppSettingsModel, 1)
+                phone_number = phone_number or (app_settings.default_phone_number if app_settings else "+8801819203040")
+                language = language or (app_settings.default_language if app_settings else "bn-BD")
         call = await self.create_call(phone_number, direction="INBOUND", language=language)
         call_id = call.id
 

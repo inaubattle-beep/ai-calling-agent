@@ -7,6 +7,7 @@ from .config import settings
 from .database import init_db
 from .events.bus import event_bus
 from .routers.agents import router as agents_router
+from .routers.admin import router as admin_router
 from .routers.calls import router as calls_router
 from .routers.events import router as events_router
 from .routers.health import router as health_router
@@ -52,6 +53,7 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(calls_router)
 app.include_router(agents_router)
+app.include_router(admin_router)
 app.include_router(events_router)
 app.include_router(ws_router)
 

@@ -31,7 +31,6 @@ export*
 __pycache__/model_tools.cpython-310.pyc
 __pycache__/web_tools.cpython-310.pyc
 logs/
-data/
 # Bundled community plugin index seed (shipped as package data) — the bare
 # `data/` pattern above would otherwise swallow it.
 !hermes_cli/data/
@@ -50,7 +49,6 @@ run_datagen_megascience_glm4-6.sh
 run_datagen_sonnet.sh
 source-data/*
 run_datagen_megascience_glm4-6.sh
-data/*
 # No trailing slash: also matches node_modules SYMLINKS (worktrees often
 # symlink node_modules to the main checkout; the dir-only pattern let one
 # slip into a commit and break `npm ci` on CI with ENOTDIR).

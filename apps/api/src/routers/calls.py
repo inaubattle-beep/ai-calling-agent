@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..database import get_db
+from ..models.settings import AppSettingsModel
 from ..models.call import CallModel
 from ..models.transcript import TranscriptMessageModel
 from ..schemas.call import CallCreate, CallDetailResponse, CallResponse, TranscriptMessageResponse
@@ -15,8 +16,8 @@ router = APIRouter(prefix="/api/calls", tags=["Calls"])
 
 
 class SimulateRequest(BaseModel):
-    phone_number: str = "+8801819203040"
-    language: str = "bn-BD"
+    phone_number: Optional[str] = None
+    language: Optional[str] = None
     barge_in: bool = False
 
 
@@ -66,12 +67,15 @@ async def get_call_detail(call_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.post("", response_model=CallResponse, status_code=201)
 async def create_call(req: CallCreate):
-    call = await call_manager.create_call(
-        phone_number=req.phone_number,
-        direction=req.direction,
-        language=req.language,
-        agent_id=req.agent_id,
-    )
+    try:
+        call = await call_manager.create_call(
+            phone_number=req.phone_number,
+            direction=req.direction,
+            language=req.language,
+            agent_id=req.agent_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return call
 
 
@@ -95,11 +99,12 @@ async def interrupt_call(call_id: str):
 
 
 @router.post("/simulate")
-async def simulate_call(req: SimulateRequest):
+async def simulate_call(req: SimulateRequest, db: AsyncSession = Depends(get_db)):
     """Starts an automated real-time simulated call with bilingual dialogue."""
+    app_settings = await db.get(AppSettingsModel, 1)
     call_id = await call_manager.simulate_realistic_call(
-        phone_number=req.phone_number,
-        language=req.language,
+        phone_number=req.phone_number or (app_settings.default_phone_number if app_settings else None),
+        language=req.language or (app_settings.default_language if app_settings else None),
         barge_in=req.barge_in,
     )
     return {"status": "simulated", "call_id": call_id}

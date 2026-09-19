@@ -44,8 +44,7 @@ class AIReceptionistAgent(Agent):
         self.conversation_history.clear()
         self._interrupted = False
 
-        # Polite bilingual opening
-        greeting = "আসসালামু আলাইকুম, AI কল সেন্টারে আপনাকে স্বাগতম। আমি কীভাবে সাহায্য করতে পারি?"
+        greeting = self.config.greeting
         self.current_language = "bn-BD"
         self.add_turn(speaker="ai", text=greeting, language=self.current_language)
         return greeting
@@ -59,7 +58,7 @@ class AIReceptionistAgent(Agent):
         self.add_turn(speaker="customer", text=speech_text, language=self.current_language)
 
         # Build message history for LLM
-        messages = [LLMMessage(role="system", content=SYSTEM_PROMPT)]
+        messages = [LLMMessage(role="system", content=self.config.system_prompt or SYSTEM_PROMPT)]
         for turn in self.conversation_history[-6:]:  # Keep last 6 turns for low latency context
             role = "user" if turn.speaker == "customer" else "assistant"
             messages.append(LLMMessage(role=role, content=turn.text))

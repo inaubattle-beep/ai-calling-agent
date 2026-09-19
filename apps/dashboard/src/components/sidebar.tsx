@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { 
@@ -14,15 +14,22 @@ import {
   Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AppSettings, fetchSettings } from '@/lib/api';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  useEffect(() => {
+    fetchSettings().then(setSettings).catch(() => undefined);
+  }, []);
 
   const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Live Calls', href: '/calls', icon: PhoneCall },
     { name: 'AI Agents', href: '/agents', icon: Bot },
     { name: 'Call History', href: '/history', icon: History },
+    { name: 'Admin Settings', href: '/admin', icon: Settings },
   ];
 
   return (
@@ -34,7 +41,7 @@ export const Sidebar: React.FC = () => {
             <Radio className="w-4 h-4 text-white" />
           </div>
           <div>
-            <span className="font-bold tracking-tight text-white block text-sm leading-tight">Antigravity Voice</span>
+            <span className="font-bold tracking-tight text-white block text-sm leading-tight">{settings?.business_name || 'Voice Platform'}</span>
             <span className="text-[11px] text-cyan-400 font-medium">Bilingual MVP</span>
           </div>
         </div>
@@ -75,15 +82,15 @@ export const Sidebar: React.FC = () => {
           </div>
           <div className="space-y-1.5 text-[11px] text-slate-400">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                AI Receptionist
+                {settings?.default_agent_id || 'Default agent'}
               </span>
               <span className="text-emerald-400 font-medium">ONLINE</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Languages</span>
-              <span className="text-slate-300 font-mono">bn-BD / en-US</span>
+              <span className="text-slate-300 font-mono">{settings?.supported_languages.join(' / ') || 'Loading'}</span>
             </div>
           </div>
         </div>
